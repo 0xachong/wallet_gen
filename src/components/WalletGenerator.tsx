@@ -21,7 +21,7 @@ export const WalletGenerator: React.FC = () => {
     });
     const [mnemonicList, setMnemonicList] = useState('');
 
-    const chains: ChainType[] = ['ETH', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN'];
+    const chains: ChainType[] = ['ETH', 'SOL', 'TRX', 'TON', 'SUI', 'APTOS', 'BITCOIN'];
 
     useEffect(() => {
         // 设置进度回调
@@ -72,6 +72,13 @@ export const WalletGenerator: React.FC = () => {
         setLoading(false);
     };
 
+    const handleChainChange = (value: ChainType) => {
+        setOptions(prev => ({ ...prev, chain: value }));
+        if (value === 'TON') {
+            message.warning('注意: TON 生成私钥及地址目前仅支持 OKX 钱包，与其他钱包可能不兼容');
+        }
+    };
+
     return (
         <div className="wallet-generator">
             <Card bordered={false} style={{ padding: '8px' }}>
@@ -94,7 +101,7 @@ export const WalletGenerator: React.FC = () => {
                         <Title level={5} style={{ marginBottom: '8px' }}>选择链</Title>
                         <Radio.Group
                             value={options.chain}
-                            onChange={e => setOptions(prev => ({ ...prev, chain: e.target.value }))}
+                            onChange={e => handleChainChange(e.target.value)}
                             buttonStyle="solid"
                             size="middle"
                         >

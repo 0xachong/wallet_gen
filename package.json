@@ -19,6 +19,7 @@
     "@okxweb3/coin-sui": "^1.0.0",
     "@okxweb3/coin-tron": "^1.0.0",
     "@okxweb3/coin-aptos": "^1.0.0",
+    "@okxweb3/coin-ton": "^1.0.0",
     "antd": "^5.23.3",
     "ethers": "^5.7.2",
     "react": "^18.2.0",
