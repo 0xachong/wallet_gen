@@ -21,7 +21,7 @@ export const WalletGenerator: React.FC = () => {
     });
     const [mnemonicList, setMnemonicList] = useState('');
 
-    const chains: ChainType[] = ['ETH', 'BSC', 'HECO', 'MATIC', 'FANTOM', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN', 'BITCOIN_TESTNET', 'COSMOS', 'TON'];
+    const chains: ChainType[] = ['ETH', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN', 'BITCOIN_TESTNET'];
 
     useEffect(() => {
         // 设置进度回调
@@ -84,7 +84,7 @@ export const WalletGenerator: React.FC = () => {
                     批量生成ETH钱包地址
                 </Title>
                 <Row gutter={24}>
-                    <Card title="选择批量生成钱包的链" className="section-card">
+                    <Card title="选择批量生成钱包的链" className="section-card" style={{ width: '100%' }}>
                         <Radio.Group
                             value={options.chain}
                             onChange={e => setOptions(prev => ({ ...prev, chain: e.target.value }))}
@@ -265,17 +265,20 @@ word1 word2 word3 ... word12"
                                         dataIndex: 'address',
                                         key: 'address',
                                         width: '25%',
-                                        render: (text: string) => (
-                                            <Typography.Text
-                                                className="monospace-text clickable-text"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(text);
-                                                    message.success('地址已复制到剪贴板');
-                                                }}
-                                            >
-                                                {text.slice(0, 6)}...{text.slice(-4)}
-                                            </Typography.Text>
-                                        ),
+                                        render: (text: string) => {
+                                            if (typeof text !== 'string') return text;
+                                            return (
+                                                <Typography.Text
+                                                    className="monospace-text clickable-text"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(text);
+                                                        message.success('地址已复制到剪贴板');
+                                                    }}
+                                                >
+                                                    {text.slice(0, 6)}...{text.slice(-4)}
+                                                </Typography.Text>
+                                            );
+                                        },
                                     }
                                 ]}
                                 pagination={false}

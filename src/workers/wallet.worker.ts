@@ -1,5 +1,7 @@
 import { ethers } from 'ethers';
-import { GenerateOptions, WalletInfo } from '../types';
+import { GenerateOptions, WalletInfo, WalletMap } from '../types';
+
+
 
 self.onmessage = async (e: MessageEvent<GenerateOptions & { mnemonics?: string[] }>) => {
     const options = e.data;
@@ -9,7 +11,11 @@ self.onmessage = async (e: MessageEvent<GenerateOptions & { mnemonics?: string[]
             : await generateWallets(options);
         self.postMessage({ type: 'success', data: wallets });
     } catch (error) {
-        self.postMessage({ type: 'error', error: error.message });
+        console.error('Worker error:', error);
+        self.postMessage({
+            type: 'error',
+            error: error instanceof Error ? error.message : '生成钱包失败'
+        });
     }
 };
 
@@ -31,21 +37,44 @@ async function generateWallets(options: GenerateOptions): Promise<WalletInfo[]> 
 }
 
 async function generateWalletsCommon(mnemonic: string, derivationCount: number, chain: string, wordlist: ethers.Wordlist): Promise<WalletInfo[]> {
-    const wallets: WalletInfo[] = [];
-    for (let i = 0; i < derivationCount; i++) {
-        const path = `m/44'/60'/0'/0/${i}`;
-        const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
-        const wallet = new ethers.Wallet(hdNode.privateKey);
-        wallets.push({
-            id: 0,
-            mnemonic,
-            address: wallet.address,
-            privateKey: wallet.privateKey,
-            chain,
-            derivationIndex: i
-        });
+    console.log("Generating wallet for chain:", chain);
+    console.log("Available wallets:", Object.keys(WalletMap));
+
+    const WalletClass = WalletMap[chain];
+    if (!WalletClass) {
+        throw new Error(`不支持的链: ${chain}`);
     }
-    return wallets;
+
+    try {
+        const wallets: WalletInfo[] = [];
+        for (let i = 0; i < derivationCount; i++) {
+            try {
+                const wallet = new WalletClass();
+                const params = {
+                    mnemonic: mnemonic,
+                    hdPath: await wallet.getDerivedPath({ index: i }),
+                }
+                const privateKey = await wallet.getDerivedPrivateKey(params);
+                const { address } = await wallet.getNewAddress({ privateKey });
+
+                wallets.push({
+                    id: 0,
+                    mnemonic,
+                    address,
+                    privateKey,
+                    chain,
+                    derivationIndex: i
+                });
+            } catch (error) {
+                console.error(`Error generating wallet at index ${i}:`, error);
+                throw error;
+            }
+        }
+        return wallets;
+    } catch (error) {
+        console.error("Error in generateWalletsCommon:", error);
+        throw error;
+    }
 }
 
 async function generateWalletGroup(options: GenerateOptions): Promise<WalletInfo[]> {
