@@ -65,17 +65,22 @@ export class WalletGenerator {
         return csvContent;
     }
 
-    static downloadCsv(csvContent: string) {
+    static downloadCsv = (csvContent: string) => {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
+
+        // 格式化当前时间为年月日时分秒
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+
         link.setAttribute('href', url);
-        link.setAttribute('download', `wallets-${new Date().getTime()}.csv`);
+        link.setAttribute('download', `wallets_${timestamp}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }
+    };
 
     static async generateFromMnemonics(mnemonics: string[], options: GenerateOptions): Promise<WalletInfo[]> {
         return new Promise((resolve, reject) => {
