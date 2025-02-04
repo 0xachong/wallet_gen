@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { GenerateOptions, WalletInfo, WalletMap } from '../types';
+import { ChainType } from '../types';
 
 
 
@@ -36,7 +37,7 @@ async function generateWallets(options: GenerateOptions): Promise<WalletInfo[]> 
     return wallets;
 }
 
-async function generateWalletsCommon(mnemonic: string, derivationCount: number, chain: string, wordlist: ethers.Wordlist): Promise<WalletInfo[]> {
+async function generateWalletsCommon(mnemonic: string, derivationCount: number, chain: ChainType): Promise<WalletInfo[]> {
     console.log("Generating wallet for chain:", chain);
     console.log("Available wallets:", Object.keys(WalletMap));
 
@@ -92,18 +93,17 @@ async function generateWalletGroup(options: GenerateOptions): Promise<WalletInfo
     const entropy = ethers.utils.randomBytes(entropyBytes);
     const mnemonic = ethers.utils.entropyToMnemonic(entropy, wordlist);
 
-    return generateWalletsCommon(mnemonic, derivationCount, chain, wordlist);
+    return generateWalletsCommon(mnemonic, derivationCount, chain);
 }
 
 async function generateFromMnemonics(mnemonics: string[], options: GenerateOptions): Promise<WalletInfo[]> {
     const wallets: WalletInfo[] = [];
-    const wordlist = options.language ? ethers.wordlists[options.language] : ethers.wordlists.en;
 
     for (let i = 0; i < mnemonics.length; i++) {
         const mnemonic = mnemonics[i].trim();
         if (!mnemonic) continue;
 
-        const generatedWallets = await generateWalletsCommon(mnemonic, options.derivationCount, options.chain, wordlist);
+        const generatedWallets = await generateWalletsCommon(mnemonic, options.derivationCount, options.chain);
         generatedWallets.forEach(wallet => {
             wallet.id = wallets.length + 1;
             wallets.push(wallet);

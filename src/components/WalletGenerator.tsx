@@ -21,7 +21,7 @@ export const WalletGenerator: React.FC = () => {
     });
     const [mnemonicList, setMnemonicList] = useState('');
 
-    const chains: ChainType[] = ['ETH', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN', 'BITCOIN_TESTNET'];
+    const chains: ChainType[] = ['ETH', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN'];
 
     useEffect(() => {
         // 设置进度回调
@@ -112,7 +112,7 @@ export const WalletGenerator: React.FC = () => {
                             <Title level={5} style={{ marginBottom: '8px' }}>助记词长度</Title>
                             <Select
                                 size="middle"
-                                value={options.wordCount}
+                                value={options.wordCount as 12 | 15 | 18 | 21 | 24}
                                 onChange={(value: 12 | 15 | 18 | 21 | 24) => setOptions(prev => ({ ...prev, wordCount: value }))}
                                 style={{ width: '100%' }}
                                 options={[
