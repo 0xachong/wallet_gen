@@ -7,7 +7,7 @@ export interface WalletInfo {
     mnemonic: string;
     address: string;
     privateKey: string;
-    chain: ChainType;
+    chain: string;
     derivationIndex: number;
 }
 

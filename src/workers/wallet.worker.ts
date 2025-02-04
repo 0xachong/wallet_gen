@@ -30,6 +30,24 @@ async function generateWallets(options: GenerateOptions): Promise<WalletInfo[]> 
     return wallets;
 }
 
+async function generateWalletsCommon(mnemonic: string, derivationCount: number, chain: string, wordlist: ethers.Wordlist): Promise<WalletInfo[]> {
+    const wallets: WalletInfo[] = [];
+    for (let i = 0; i < derivationCount; i++) {
+        const path = `m/44'/60'/0'/0/${i}`;
+        const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
+        const wallet = new ethers.Wallet(hdNode.privateKey);
+        wallets.push({
+            id: 0,
+            mnemonic,
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            chain,
+            derivationIndex: i
+        });
+    }
+    return wallets;
+}
+
 async function generateWalletGroup(options: GenerateOptions): Promise<WalletInfo[]> {
     const { wordCount = 12, language = 'en', chain, derivationCount = 1 } = options;
     const wordlist = ethers.wordlists[language] || ethers.wordlists.en;
@@ -41,33 +59,8 @@ async function generateWalletGroup(options: GenerateOptions): Promise<WalletInfo
 
     const entropy = ethers.utils.randomBytes(entropyBytes);
     const mnemonic = ethers.utils.entropyToMnemonic(entropy, wordlist);
-    const wallets: WalletInfo[] = [];
 
-    for (let i = 0; i < derivationCount; i++) {
-        const path = `m/44'/60'/0'/0/${i}`;
-
-        switch (chain) {
-            case 'ETH':
-            case 'BSC':
-            case 'HECO':
-            case 'MATIC':
-            case 'FANTOM': {
-                const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
-                const wallet = new ethers.Wallet(hdNode.privateKey);
-                wallets.push({
-                    id: 0,
-                    mnemonic,
-                    address: wallet.address,
-                    privateKey: wallet.privateKey,
-                    chain,
-                    derivationIndex: i
-                });
-                break;
-            }
-            // ... 其他 case 保持不变
-        }
-    }
-    return wallets;
+    return generateWalletsCommon(mnemonic, derivationCount, chain, wordlist);
 }
 
 async function generateFromMnemonics(mnemonics: string[], options: GenerateOptions): Promise<WalletInfo[]> {
@@ -78,20 +71,11 @@ async function generateFromMnemonics(mnemonics: string[], options: GenerateOptio
         const mnemonic = mnemonics[i].trim();
         if (!mnemonic) continue;
 
-        for (let j = 0; j < options.derivationCount; j++) {
-            const path = `m/44'/60'/0'/0/${j}`;
-            const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
-            const wallet = new ethers.Wallet(hdNode.privateKey);
-
-            wallets.push({
-                id: wallets.length + 1,
-                mnemonic,
-                address: wallet.address,
-                privateKey: wallet.privateKey,
-                chain: options.chain,
-                derivationIndex: j
-            });
-        }
+        const generatedWallets = await generateWalletsCommon(mnemonic, options.derivationCount, options.chain, wordlist);
+        generatedWallets.forEach(wallet => {
+            wallet.id = wallets.length + 1;
+            wallets.push(wallet);
+        });
     }
 
     return wallets;
