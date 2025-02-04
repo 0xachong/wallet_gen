@@ -78,9 +78,35 @@
 }
 
 .ant-table-tbody>tr>td {
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .ant-table-tbody>tr:hover>td {
     background: #fff8f3;
+}
+
+/* 添加等宽字体样式 */
+.monospace-text {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    letter-spacing: -0.5px;
+    font-size: 13px;
+}
+
+/* 移除复制按钮 */
+.ant-typography-copy {
+    display: none;
+}
+
+.clickable-text {
+    cursor: pointer;
+    transition: all 0.3s;
+    user-select: none;
+}
+
+.clickable-text:hover {
+    color: #f4a261;
+}
+
+.clickable-text:active {
+    color: #e76f51;
 }

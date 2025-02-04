@@ -15,7 +15,8 @@ export const WalletGenerator: React.FC = () => {
         language: 'en',
         chain: 'ETH',
         count: 10,
-        processCount: 5
+        processCount: 5,
+        derivationCount: 1
     });
 
     const chains: ChainType[] = ['ETH', 'BSC', 'HECO', 'MATIC', 'FANTOM', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN', 'BITCOIN_TESTNET', 'COSMOS', 'TON'];
@@ -87,13 +88,13 @@ export const WalletGenerator: React.FC = () => {
 
                 <Card className="section-card">
                     <Row gutter={24}>
-                        <Col span={12}>
-                            <Title level={5}>进程数</Title>
+                        <Col span={8}>
+                            <Title level={5}>每个助记词派生数量</Title>
                             <InputNumber
                                 min={1}
                                 max={20}
-                                value={options.processCount}
-                                onChange={value => setOptions(prev => ({ ...prev, processCount: value || 1 }))}
+                                value={options.derivationCount}
+                                onChange={value => setOptions(prev => ({ ...prev, derivationCount: value || 1 }))}
                                 style={{ width: '100%' }}
                             />
                         </Col>
@@ -110,9 +111,29 @@ export const WalletGenerator: React.FC = () => {
                     </Row>
                 </Card>
 
+                <div className="actions" style={{ margin: '24px 0' }}>
+                    <Button
+                        type="primary"
+                        icon={<ReloadOutlined />}
+                        onClick={handleGenerate}
+                        loading={loading}
+                        size="large"
+                    >
+                        {loading ? '生成中...' : '重新生成'}
+                    </Button>
+                    <Button
+                        icon={<DownloadOutlined />}
+                        onClick={handleDownload}
+                        disabled={wallets.length === 0}
+                        size="large"
+                    >
+                        下载表格
+                    </Button>
+                </div>
+
                 <Card className="section-card">
                     <div style={{ marginBottom: 10 }}>
-                        Progress: {wallets.length} / {options.count}
+                        Progress: {wallets.length} / {options.count * options.derivationCount}
                     </div>
                     <Progress
                         percent={Math.round((wallets.length / options.count) * 100)}
@@ -140,29 +161,69 @@ export const WalletGenerator: React.FC = () => {
                                         width: 100,
                                     },
                                     {
+                                        title: '派生索引',
+                                        dataIndex: 'derivationIndex',
+                                        key: 'derivationIndex',
+                                        width: 100,
+                                    },
+                                    {
                                         title: '助记词',
                                         dataIndex: 'mnemonic',
                                         key: 'mnemonic',
-                                        ellipsis: true,
-                                    },
-                                    {
-                                        title: '钱包地址',
-                                        dataIndex: 'address',
-                                        key: 'address',
-                                        ellipsis: true,
-                                        render: (text: string) => (
-                                            <Typography.Text copyable>{text}</Typography.Text>
-                                        ),
+                                        width: '25%',
+                                        render: (text: string) => {
+                                            const words = text.split(' ');
+                                            const displayText = words.length > 6
+                                                ? `${words.slice(0, 3).join(' ')} ... ${words.slice(-3).join(' ')}`
+                                                : text;
+
+                                            return (
+                                                <Typography.Text
+                                                    className="monospace-text clickable-text"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(text);
+                                                        message.success('助记词已复制到剪贴板');
+                                                    }}
+                                                >
+                                                    {displayText}
+                                                </Typography.Text>
+                                            );
+                                        },
                                     },
                                     {
                                         title: '私钥',
                                         dataIndex: 'privateKey',
                                         key: 'privateKey',
-                                        ellipsis: true,
+                                        width: '25%',
                                         render: (text: string) => (
-                                            <Typography.Text copyable>{text}</Typography.Text>
+                                            <Typography.Text
+                                                className="monospace-text clickable-text"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(text);
+                                                    message.success('私钥已复制到剪贴板');
+                                                }}
+                                            >
+                                                {text.slice(0, 10)}...{text.slice(-8)}
+                                            </Typography.Text>
                                         ),
                                     },
+                                    {
+                                        title: '钱包地址',
+                                        dataIndex: 'address',
+                                        key: 'address',
+                                        width: '25%',
+                                        render: (text: string) => (
+                                            <Typography.Text
+                                                className="monospace-text clickable-text"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(text);
+                                                    message.success('地址已复制到剪贴板');
+                                                }}
+                                            >
+                                                {text.slice(0, 6)}...{text.slice(-4)}
+                                            </Typography.Text>
+                                        ),
+                                    }
                                 ]}
                                 pagination={false}
                                 scroll={{ x: true }}
@@ -171,26 +232,6 @@ export const WalletGenerator: React.FC = () => {
                         </div>
                     </Card>
                 )}
-
-                <div className="actions">
-                    <Button
-                        type="primary"
-                        icon={<ReloadOutlined />}
-                        onClick={handleGenerate}
-                        loading={loading}
-                        size="large"
-                    >
-                        {loading ? '生成中...' : '重新生成'}
-                    </Button>
-                    <Button
-                        icon={<DownloadOutlined />}
-                        onClick={handleDownload}
-                        disabled={wallets.length === 0}
-                        size="large"
-                    >
-                        下载表格
-                    </Button>
-                </div>
             </Card>
         </div>
     );

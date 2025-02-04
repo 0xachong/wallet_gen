@@ -3,58 +3,65 @@ import { WalletInfo, ChainType, GenerateOptions } from '../types';
 import { Wordlist } from '@ethersproject/wordlists';
 
 export class WalletGenerator {
-    static async generateWallet(options: GenerateOptions): Promise<WalletInfo> {
-        const { wordCount = 12, language = 'en', chain } = options;
-
-        // 获取对应的词库
+    static async generateWallet(options: GenerateOptions): Promise<WalletInfo[]> {
+        const { wordCount = 12, language = 'en', chain, derivationCount = 1 } = options;
         const wordlist = this.getWordlist(language);
 
-        // 固定熵的大小为 16/24/32 字节
         let entropyBytes: number;
-        if (wordCount <= 12) entropyBytes = 16;      // 128 bits
-        else if (wordCount <= 18) entropyBytes = 24; // 192 bits
-        else entropyBytes = 32;                      // 256 bits
+        if (wordCount <= 12) entropyBytes = 16;
+        else if (wordCount <= 18) entropyBytes = 24;
+        else entropyBytes = 32;
 
         const entropy = ethers.utils.randomBytes(entropyBytes);
         const mnemonic = ethers.utils.entropyToMnemonic(entropy, wordlist);
-        console.log('mnemonic:', mnemonic);
-        // 根据不同链类型生成对应的钱包
-        switch (chain) {
-            case 'ETH':
-            case 'BSC':
-            case 'HECO':
-            case 'MATIC':
-            case 'FANTOM': {
-                // EVM兼容链使用相同的生成方式
-                const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist);
-                const wallet = new ethers.Wallet(hdNode.privateKey);
-                return {
-                    id: 0,
-                    mnemonic,
-                    address: wallet.address,
-                    privateKey: wallet.privateKey,
-                    chain
-                };
-            }
+        const wallets: WalletInfo[] = [];
 
-            case 'BITCOIN':
-            case 'BITCOIN_TESTNET': {
-                // 比特币钱包生成
-                const path = chain === 'BITCOIN' ? "m/44'/0'/0'/0/0" : "m/44'/1'/0'/0/0";
-                const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
-                return {
-                    id: 0,
-                    mnemonic,
-                    address: `bc${chain === 'BITCOIN_TESTNET' ? 't' : ''}1${hdNode.address}`,
-                    privateKey: hdNode.privateKey,
-                    chain
-                };
-            }
+        // 生成多个派生钱包
+        for (let i = 0; i < derivationCount; i++) {
+            const path = `m/44'/60'/0'/0/${i}`; // 使用标准的 BIP44 路径
 
-            // 其他链的实现可以根据需要添加
-            default:
-                throw new Error(`暂不支持 ${chain} 链的钱包生成`);
+            switch (chain) {
+                case 'ETH':
+                case 'BSC':
+                case 'HECO':
+                case 'MATIC':
+                case 'FANTOM': {
+                    const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
+                    const wallet = new ethers.Wallet(hdNode.privateKey);
+                    wallets.push({
+                        id: 0,
+                        mnemonic,
+                        address: wallet.address,
+                        privateKey: wallet.privateKey,
+                        chain,
+                        derivationIndex: i
+                    });
+                    break;
+                }
+
+                case 'BITCOIN':
+                case 'BITCOIN_TESTNET': {
+                    // 比特币钱包生成
+                    const path = chain === 'BITCOIN' ? "m/44'/0'/0'/0/0" : "m/44'/1'/0'/0/0";
+                    const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
+                    wallets.push({
+                        id: 0,
+                        mnemonic,
+                        address: `bc${chain === 'BITCOIN_TESTNET' ? 't' : ''}1${hdNode.address}`,
+                        privateKey: hdNode.privateKey,
+                        chain,
+                        derivationIndex: i
+                    });
+                    break;
+                }
+
+                // 其他链的实现可以根据需要添加
+                default:
+                    throw new Error(`暂不支持 ${chain} 链的钱包生成`);
+            }
         }
+
+        return wallets;
     }
 
     // 获取词库
@@ -79,7 +86,6 @@ export class WalletGenerator {
         const { count = 1, processCount = 1 } = options;
         const wallets: WalletInfo[] = [];
 
-        // 使用Promise.all实现并行生成
         const batchSize = Math.ceil(count / processCount);
         const batches = Array.from({ length: processCount }, (_, i) => {
             const start = i * batchSize;
@@ -89,9 +95,11 @@ export class WalletGenerator {
 
         try {
             const results = await Promise.all(batches.map(batch => Promise.all(batch)));
-            results.flat().forEach((wallet, index) => {
-                wallet.id = index + 1;
-                wallets.push(wallet);
+            results.flat().forEach((walletGroup, groupIndex) => {
+                walletGroup.forEach((wallet, index) => {
+                    wallet.id = groupIndex * options.derivationCount + index + 1;
+                    wallets.push(wallet);
+                });
             });
         } catch (error) {
             console.error('批量生成钱包失败:', error);

@@ -8,6 +8,7 @@ export interface WalletInfo {
     address: string;
     privateKey: string;
     chain: ChainType;
+    derivationIndex: number;
 }
 
 export interface ConfigType {
@@ -22,4 +23,5 @@ export interface GenerateOptions {
     chain: ChainType;
     count: number;
     processCount: number;
+    derivationCount: number;
 } 
