@@ -43,26 +43,38 @@ export class WalletGenerator {
     static onProgress?: (current: number, total: number) => void;
 
     static async exportToCsv(wallets: WalletInfo[]): Promise<string> {
-        const header = ['序号', '链', '助记词', '钱包地址', '私钥'].join(',');
-        const rows = wallets.map(w =>
-            [w.id, w.chain, w.mnemonic, w.address, w.privateKey].join(',')
-        );
+        // CSV 表头
+        const headers = ['序号', '链', '派生索引', '助记词', '私钥', '地址'];
 
-        return [header, ...rows].join('\n');
+        // 转换钱包数据为 CSV 行
+        const rows = wallets.map(wallet => [
+            wallet.id,
+            wallet.chain,
+            wallet.derivationIndex,
+            wallet.mnemonic,
+            wallet.privateKey,
+            wallet.address
+        ]);
+
+        // 组合表头和数据行
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        return csvContent;
     }
 
-    static downloadCsv(content: string, filename: string = 'wallets.csv'): void {
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
+    static downloadCsv(csvContent: string) {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
-
-        link.href = url;
-        link.download = filename;
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `wallets-${new Date().getTime()}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     }
 
     static async generateFromMnemonics(mnemonics: string[], options: GenerateOptions): Promise<WalletInfo[]> {
