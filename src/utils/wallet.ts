@@ -135,14 +135,9 @@ export class WalletGenerator {
 
     static downloadCsv(content: string, filename: string = 'wallets.csv'): void {
         const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
-        if (navigator.msSaveBlob) {
-            navigator.msSaveBlob(blob, filename);
-            return;
-        }
-
-        const url = URL.createObjectURL(blob);
         link.href = url;
         link.download = filename;
         link.style.visibility = 'hidden';

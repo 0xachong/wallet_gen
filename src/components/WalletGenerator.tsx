@@ -199,6 +199,7 @@ word1 word2 word3 ... word12"
                         <div className="table-container">
                             <Table
                                 dataSource={wallets}
+                                rowKey={record => `${record.chain}-${record.id}-${record.derivationIndex}`}
                                 columns={[
                                     {
                                         title: '序号',
