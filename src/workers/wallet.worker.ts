@@ -1,10 +1,12 @@
 import { ethers } from 'ethers';
 import { GenerateOptions, WalletInfo } from '../types';
 
-self.onmessage = async (e: MessageEvent<GenerateOptions>) => {
+self.onmessage = async (e: MessageEvent<GenerateOptions & { mnemonics?: string[] }>) => {
     const options = e.data;
     try {
-        const wallets = await generateWallets(options);
+        const wallets = options.mnemonics
+            ? await generateFromMnemonics(options.mnemonics, options)
+            : await generateWallets(options);
         self.postMessage({ type: 'success', data: wallets });
     } catch (error) {
         self.postMessage({ type: 'error', error: error.message });
@@ -65,6 +67,33 @@ async function generateWalletGroup(options: GenerateOptions): Promise<WalletInfo
             // ... 其他 case 保持不变
         }
     }
+    return wallets;
+}
+
+async function generateFromMnemonics(mnemonics: string[], options: GenerateOptions): Promise<WalletInfo[]> {
+    const wallets: WalletInfo[] = [];
+    const wordlist = options.language ? ethers.wordlists[options.language] : ethers.wordlists.en;
+
+    for (let i = 0; i < mnemonics.length; i++) {
+        const mnemonic = mnemonics[i].trim();
+        if (!mnemonic) continue;
+
+        for (let j = 0; j < options.derivationCount; j++) {
+            const path = `m/44'/60'/0'/0/${j}`;
+            const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
+            const wallet = new ethers.Wallet(hdNode.privateKey);
+
+            wallets.push({
+                id: wallets.length + 1,
+                mnemonic,
+                address: wallet.address,
+                privateKey: wallet.privateKey,
+                chain: options.chain,
+                derivationIndex: j
+            });
+        }
+    }
+
     return wallets;
 }
 

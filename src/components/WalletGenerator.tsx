@@ -103,7 +103,7 @@ export const WalletGenerator: React.FC = () => {
                             <Title level={5}>选择助记词长度</Title>
                             <Select
                                 value={options.wordCount}
-                                onChange={value => setOptions(prev => ({ ...prev, wordCount: value }))}
+                                onChange={(value: 12 | 15 | 18 | 21 | 24) => setOptions(prev => ({ ...prev, wordCount: value }))}
                                 style={{ width: '100%' }}
                                 options={[
                                     { label: '12位助记词', value: 12 },
