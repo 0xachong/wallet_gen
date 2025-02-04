@@ -74,34 +74,44 @@ export const WalletGenerator: React.FC = () => {
 
     return (
         <div className="wallet-generator">
-            <Card bordered={false}>
-                <div className="tips-card">
+            <Card bordered={false} style={{ padding: '8px' }}>
+                <div className="tips-card" style={{ marginBottom: '8px' }}>
                     <Text type="secondary">
                         Tips: 钱包生成过程均在本地电脑完成，我们无法获取到您的助记词及私钥！请保管好您的助记词及私钥！
                     </Text>
                 </div>
-                <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
-                    批量生成ETH钱包地址
-                </Title>
-                <Row gutter={24}>
-                    <Card title="选择批量生成钱包的链" className="section-card" style={{ width: '100%' }}>
+
+                {/* 参数设置卡片 */}
+                <Card
+                    title="参数设置"
+                    className="section-card"
+                    style={{ marginBottom: '8px' }}
+                    bodyStyle={{ padding: '12px' }}
+                    headStyle={{ padding: '8px 12px' }}
+                >
+                    {/* 链选择 */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <Title level={5} style={{ marginBottom: '8px' }}>选择链</Title>
                         <Radio.Group
                             value={options.chain}
                             onChange={e => setOptions(prev => ({ ...prev, chain: e.target.value }))}
                             buttonStyle="solid"
+                            size="middle"
                         >
-                            <Space wrap>
+                            <Space wrap size={4}>
                                 {chains.map(chain => (
-                                    <Radio.Button key={chain} value={chain}>
-                                        {chain}
-                                    </Radio.Button>
+                                    <Radio.Button key={chain} value={chain}>{chain}</Radio.Button>
                                 ))}
                             </Space>
                         </Radio.Group>
+                    </div>
 
-                        <div style={{ marginTop: 20 }}>
-                            <Title level={5}>选择助记词长度</Title>
+                    {/* 其他参数 */}
+                    <Row gutter={[8, 8]}>
+                        <Col span={6}>
+                            <Title level={5} style={{ marginBottom: '8px' }}>助记词长度</Title>
                             <Select
+                                size="middle"
                                 value={options.wordCount}
                                 onChange={(value: 12 | 15 | 18 | 21 | 24) => setOptions(prev => ({ ...prev, wordCount: value }))}
                                 style={{ width: '100%' }}
@@ -114,15 +124,11 @@ export const WalletGenerator: React.FC = () => {
                                 ]}
                                 defaultValue={12}
                             />
-                        </div>
-                    </Card>
-                </Row>
-
-                <Card className="section-card">
-                    <Row gutter={24}>
-                        <Col span={8}>
-                            <Title level={5}>生成助记词数量</Title>
+                        </Col>
+                        <Col span={6}>
+                            <Title level={5} style={{ marginBottom: '8px' }}>助记词数量</Title>
                             <InputNumber
+                                size="middle"
                                 min={1}
                                 max={100}
                                 value={options.count}
@@ -130,9 +136,10 @@ export const WalletGenerator: React.FC = () => {
                                 style={{ width: '100%' }}
                             />
                         </Col>
-                        <Col span={8}>
-                            <Title level={5}>每个助记词派生数量</Title>
+                        <Col span={6}>
+                            <Title level={5} style={{ marginBottom: '8px' }}>派生钱包数量</Title>
                             <InputNumber
+                                size="middle"
                                 min={1}
                                 max={20}
                                 value={options.derivationCount}
@@ -140,8 +147,8 @@ export const WalletGenerator: React.FC = () => {
                                 style={{ width: '100%' }}
                             />
                         </Col>
-                        <Col span={8}>
-                            <Title level={5}>导入助记词列表</Title>
+                        <Col span={6}>
+                            <Title level={5} style={{ marginBottom: '8px' }}>导入助记词</Title>
                             <Input.TextArea
                                 placeholder="每行一个助记词，例如：
 word1 word2 word3 ... word12
@@ -152,50 +159,39 @@ word1 word2 word3 ... word12"
                             />
                         </Col>
                     </Row>
-                </Card>
 
-                <div className="actions" style={{ margin: '24px 0' }}>
-                    <Button
-                        type="primary"
-                        icon={<ReloadOutlined />}
-                        onClick={handleGenerate}
-                        loading={loading}
-                        size="large"
-                    >
-                        {loading ? '生成中...' : '重新生成'}
-                    </Button>
-                    <Button
-                        type="primary"
-                        onClick={handleImportMnemonics}
-                        disabled={!mnemonicList.trim()}
-                        loading={loading}
-                        size="large"
-                    >
-                        从助记词生成
-                    </Button>
-                    <Button
-                        icon={<DownloadOutlined />}
-                        onClick={handleDownload}
-                        disabled={wallets.length === 0}
-                        size="large"
-                    >
-                        下载表格
-                    </Button>
-                </div>
+                    {/* 操作按钮 */}
+                    <div style={{ marginTop: '12px' }}>
+                        <Space size={8}>
+                            <Button type="primary" size="middle" icon={<ReloadOutlined />} onClick={handleGenerate} loading={loading}>
+                                {loading ? '生成中...' : '重新生成'}
+                            </Button>
+                            <Button type="primary" size="middle" onClick={handleImportMnemonics} disabled={!mnemonicList.trim()} loading={loading}>从助记词生成</Button>
+                            <Button size="middle" icon={<DownloadOutlined />} onClick={handleDownload} disabled={wallets.length === 0}>下载表格</Button>
+                        </Space>
 
-                <Card className="section-card">
-                    <div style={{ marginBottom: 10 }}>
-                        Progress: {progress.current} / {progress.total}
+                        {/* 进度条 */}
+                        {loading && (
+                            <div style={{ marginTop: '8px' }}>
+                                <Progress
+                                    percent={Math.round((progress.current / progress.total) * 100)}
+                                    status="active"
+                                    showInfo={false}
+                                    size="small"
+                                />
+                            </div>
+                        )}
                     </div>
-                    <Progress
-                        percent={Math.round((progress.current / progress.total) * 100)}
-                        status="active"
-                        showInfo={false}
-                    />
                 </Card>
 
+                {/* 钱包列表卡片 */}
                 {wallets.length > 0 && (
-                    <Card title="生成的钱包列表" className="section-card">
+                    <Card
+                        title="生成的钱包列表"
+                        className="section-card"
+                        bodyStyle={{ padding: '8px' }}
+                        headStyle={{ padding: '8px 12px' }}
+                    >
                         <div className="table-container">
                             <Table
                                 dataSource={wallets}
@@ -289,6 +285,6 @@ word1 word2 word3 ... word12"
                     </Card>
                 )}
             </Card>
-        </div >
+        </div>
     );
 }; 

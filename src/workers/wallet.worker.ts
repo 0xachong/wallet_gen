@@ -49,13 +49,16 @@ async function generateWalletsCommon(mnemonic: string, derivationCount: number, 
         const wallets: WalletInfo[] = [];
         for (let i = 0; i < derivationCount; i++) {
             try {
-                const wallet = new WalletClass();
+                const wallet = new WalletClass.wallet();
                 const params = {
                     mnemonic: mnemonic,
                     hdPath: await wallet.getDerivedPath({ index: i }),
                 }
                 const privateKey = await wallet.getDerivedPrivateKey(params);
-                const { address } = await wallet.getNewAddress({ privateKey });
+                const { address } = await wallet.getNewAddress({
+                    privateKey,
+                    addressType: WalletMap[chain].addressType || undefined
+                });
 
                 wallets.push({
                     id: 0,
