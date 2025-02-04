@@ -3,6 +3,18 @@ import { WalletInfo, ChainType, GenerateOptions } from '../types';
 import { Wordlist } from '@ethersproject/wordlists';
 
 export class WalletGenerator {
+    private static worker: Worker | null = null;
+
+    private static getWorker(): Worker {
+        if (!this.worker) {
+            this.worker = new Worker(
+                new URL('../workers/wallet.worker.ts', import.meta.url),
+                { type: 'module' }
+            );
+        }
+        return this.worker;
+    }
+
     static async generateWallet(options: GenerateOptions): Promise<WalletInfo[]> {
         const { wordCount = 12, language = 'en', chain, derivationCount = 1 } = options;
         const wordlist = this.getWordlist(language);
@@ -83,31 +95,34 @@ export class WalletGenerator {
     }
 
     static async generateBatch(options: GenerateOptions): Promise<WalletInfo[]> {
-        const { count = 1, processCount = 1 } = options;
-        const wallets: WalletInfo[] = [];
+        return new Promise((resolve, reject) => {
+            const worker = this.getWorker();
 
-        const batchSize = Math.ceil(count / processCount);
-        const batches = Array.from({ length: processCount }, (_, i) => {
-            const start = i * batchSize;
-            const end = Math.min(start + batchSize, count);
-            return Array.from({ length: end - start }, () => this.generateWallet(options));
+            worker.onmessage = (e) => {
+                const { type, data, error, current, total } = e.data;
+                switch (type) {
+                    case 'success':
+                        resolve(data);
+                        break;
+                    case 'error':
+                        reject(new Error(error));
+                        break;
+                    case 'progress':
+                        // 触发进度更新事件
+                        this.onProgress?.(current, total);
+                        break;
+                }
+            };
+
+            worker.onerror = (error) => {
+                reject(error);
+            };
+
+            worker.postMessage(options);
         });
-
-        try {
-            const results = await Promise.all(batches.map(batch => Promise.all(batch)));
-            results.flat().forEach((walletGroup, groupIndex) => {
-                walletGroup.forEach((wallet, index) => {
-                    wallet.id = groupIndex * options.derivationCount + index + 1;
-                    wallets.push(wallet);
-                });
-            });
-        } catch (error) {
-            console.error('批量生成钱包失败:', error);
-            throw error;
-        }
-
-        return wallets;
     }
+
+    static onProgress?: (current: number, total: number) => void;
 
     static async exportToCsv(wallets: WalletInfo[]): Promise<string> {
         const header = ['序号', '链', '助记词', '钱包地址', '私钥'].join(',');

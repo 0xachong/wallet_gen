@@ -4,6 +4,10 @@ import path from 'path';
 
 export default defineConfig({
     plugins: [react()],
+    worker: {
+        format: 'es',
+        plugins: []
+    },
     server: {
         host: true,
         port: 3001,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Radio, InputNumber, Progress, Space, Typography, Row, Col, message, Table } from 'antd';
 import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons';
 import { WalletInfo, ChainType, GenerateOptions } from '../types';
@@ -10,6 +10,7 @@ const { Title, Text } = Typography;
 export const WalletGenerator: React.FC = () => {
     const [wallets, setWallets] = useState<WalletInfo[]>([]);
     const [loading, setLoading] = useState(false);
+    const [progress, setProgress] = useState({ current: 0, total: 0 });
     const [options, setOptions] = useState<GenerateOptions>({
         wordCount: 12,
         language: 'en',
@@ -21,8 +22,20 @@ export const WalletGenerator: React.FC = () => {
 
     const chains: ChainType[] = ['ETH', 'BSC', 'HECO', 'MATIC', 'FANTOM', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN', 'BITCOIN_TESTNET', 'COSMOS', 'TON'];
 
+    useEffect(() => {
+        // 设置进度回调
+        Generator.onProgress = (current, total) => {
+            setProgress({ current, total });
+        };
+
+        return () => {
+            Generator.onProgress = undefined;
+        };
+    }, []);
+
     const handleGenerate = async () => {
         setLoading(true);
+        setProgress({ current: 0, total: options.count });
         try {
             const newWallets = await Generator.generateBatch(options);
             setWallets(newWallets);
@@ -133,10 +146,10 @@ export const WalletGenerator: React.FC = () => {
 
                 <Card className="section-card">
                     <div style={{ marginBottom: 10 }}>
-                        Progress: {wallets.length} / {options.count * options.derivationCount}
+                        Progress: {progress.current} / {progress.total}
                     </div>
                     <Progress
-                        percent={Math.round((wallets.length / options.count) * 100)}
+                        percent={Math.round((progress.current / progress.total) * 100)}
                         status="active"
                         showInfo={false}
                     />
