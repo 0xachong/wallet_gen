@@ -1,10 +1,28 @@
 import { ethers } from 'ethers';
 import { WalletInfo, ChainType, GenerateOptions } from '../types';
 import { Wordlist } from '@ethersproject/wordlists';
+import { EthWallet } from '@okxweb3/coin-ethereum';
+// import { BtcWallet } from '@okxweb3/coin-bitcoin';
+// import { SolWallet } from '@okxweb3/coin-solana';
+// import { TrxWallet } from '@okxweb3/coin-tron';
+// import { SuiWallet } from '@okxweb3/coin-sui';
+// import { TonWallet } from '@okxweb3/coin-ton';
 
 export class WalletGenerator {
     private static worker: Worker | null = null;
-
+    private static walletMap = {
+        'ETH': new EthWallet(),
+        'BSC': new EthWallet(),
+        'HECO': new EthWallet(),
+        'MATIC': new EthWallet(),
+        'FANTOM': new EthWallet(),
+        // 'BITCOIN': new BtcWallet(),
+        // 'BITCOIN_TESTNET': new BtcWallet(),
+        // 'SOL': new SolWallet(),
+        // 'TRX': new TrxWallet(),
+        // 'SUI': new SuiWallet(),
+        // 'TON': new TonWallet(),
+    };
     private static getWorker(): Worker {
         if (!this.worker) {
             this.worker = new Worker(
@@ -29,48 +47,26 @@ export class WalletGenerator {
         const wallets: WalletInfo[] = [];
 
         // 生成多个派生钱包
+        const wallet = this.walletMap[chain];
+        if (!wallet) {
+            throw new Error(`不支持的链: ${chain}`);
+        }
         for (let i = 0; i < derivationCount; i++) {
-            const path = `m/44'/60'/0'/0/${i}`; // 使用标准的 BIP44 路径
-
-            switch (chain) {
-                case 'ETH':
-                case 'BSC':
-                case 'HECO':
-                case 'MATIC':
-                case 'FANTOM': {
-                    const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
-                    const wallet = new ethers.Wallet(hdNode.privateKey);
-                    wallets.push({
-                        id: 0,
-                        mnemonic,
-                        address: wallet.address,
-                        privateKey: wallet.privateKey,
-                        chain,
-                        derivationIndex: i
-                    });
-                    break;
-                }
-
-                case 'BITCOIN':
-                case 'BITCOIN_TESTNET': {
-                    // 比特币钱包生成
-                    const path = chain === 'BITCOIN' ? "m/44'/0'/0'/0/0" : "m/44'/1'/0'/0/0";
-                    const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
-                    wallets.push({
-                        id: 0,
-                        mnemonic,
-                        address: `bc${chain === 'BITCOIN_TESTNET' ? 't' : ''}1${hdNode.address}`,
-                        privateKey: hdNode.privateKey,
-                        chain,
-                        derivationIndex: i
-                    });
-                    break;
-                }
-
-                // 其他链的实现可以根据需要添加
-                default:
-                    throw new Error(`暂不支持 ${chain} 链的钱包生成`);
-            }
+            const params = {
+                mnemonic,
+                derivationPath: `m/44'/${wallet.coinType}'/0'/0/${i}`,
+                derivationCount: 1
+            };
+            const address = await wallet.getNewAddress(params);
+            const privateKey = await wallet.getPrivateKey(params);
+            wallets.push({
+                id: wallets.length + 1,
+                mnemonic,
+                address,
+                privateKey,
+                chain,
+                derivationIndex: i
+            });
         }
 
         return wallets;
