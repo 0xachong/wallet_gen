@@ -151,4 +151,31 @@ export class WalletGenerator {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
+
+    static async generateFromMnemonics(mnemonics: string[], options: GenerateOptions): Promise<WalletInfo[]> {
+        const wallets: WalletInfo[] = [];
+        const wordlist = this.getWordlist(options.language);
+
+        for (let i = 0; i < mnemonics.length; i++) {
+            const mnemonic = mnemonics[i].trim();
+            if (!mnemonic) continue;
+
+            for (let j = 0; j < options.derivationCount; j++) {
+                const path = `m/44'/60'/0'/0/${j}`;
+                const hdNode = ethers.utils.HDNode.fromMnemonic(mnemonic, undefined, wordlist).derivePath(path);
+                const wallet = new ethers.Wallet(hdNode.privateKey);
+
+                wallets.push({
+                    id: wallets.length + 1,
+                    mnemonic,
+                    address: wallet.address,
+                    privateKey: wallet.privateKey,
+                    chain: options.chain,
+                    derivationIndex: j
+                });
+            }
+        }
+
+        return wallets;
+    }
 } 

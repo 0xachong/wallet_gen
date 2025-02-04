@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Radio, InputNumber, Progress, Space, Typography, Row, Col, message, Table } from 'antd';
+import { Card, Button, Radio, InputNumber, Progress, Space, Typography, Row, Col, message, Table, Input, Select } from 'antd';
 import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons';
 import { WalletInfo, ChainType, GenerateOptions } from '../types';
 import { WalletGenerator as Generator } from '../utils/wallet';
@@ -19,6 +19,7 @@ export const WalletGenerator: React.FC = () => {
         processCount: 5,
         derivationCount: 1
     });
+    const [mnemonicList, setMnemonicList] = useState('');
 
     const chains: ChainType[] = ['ETH', 'BSC', 'HECO', 'MATIC', 'FANTOM', 'SOL', 'TRX', 'SUI', 'APTOS', 'BITCOIN', 'BITCOIN_TESTNET', 'COSMOS', 'TON'];
 
@@ -55,6 +56,22 @@ export const WalletGenerator: React.FC = () => {
         }
     };
 
+    const handleImportMnemonics = async () => {
+        const mnemonics = mnemonicList.split('\n').filter(m => m.trim());
+        if (!mnemonics.length) return;
+
+        setLoading(true);
+        try {
+            const newWallets = await Generator.generateFromMnemonics(mnemonics, options);
+            setWallets(newWallets);
+            message.success('钱包生成成功！');
+        } catch (error) {
+            message.error('生成钱包失败！');
+            console.error('生成钱包失败:', error);
+        }
+        setLoading(false);
+    };
+
     return (
         <div className="wallet-generator">
             <Card bordered={false}>
@@ -62,45 +79,59 @@ export const WalletGenerator: React.FC = () => {
                     批量生成ETH钱包地址
                 </Title>
 
-                <Card title="选择批量生成钱包的链" className="section-card">
-                    <Radio.Group
-                        value={options.chain}
-                        onChange={e => setOptions(prev => ({ ...prev, chain: e.target.value }))}
-                        buttonStyle="solid"
-                    >
-                        <Space wrap>
-                            {chains.map(chain => (
-                                <Radio.Button key={chain} value={chain}>
-                                    {chain}
-                                </Radio.Button>
-                            ))}
-                        </Space>
-                    </Radio.Group>
-                    <div className="tips-card">
-                        <Text type="secondary">
-                            Tips: 钱包生成过程均在本地电脑完成，我们无法获取到您的助记词及私钥！
-                        </Text>
-                    </div>
-                </Card>
+                <Row gutter={24}>
+                    <Card title="选择批量生成钱包的链" className="section-card">
+                        <Radio.Group
+                            value={options.chain}
+                            onChange={e => setOptions(prev => ({ ...prev, chain: e.target.value }))}
+                            buttonStyle="solid"
+                        >
+                            <Space wrap>
+                                {chains.map(chain => (
+                                    <Radio.Button key={chain} value={chain}>
+                                        {chain}
+                                    </Radio.Button>
+                                ))}
+                            </Space>
+                        </Radio.Group>
 
-                <Card title="选择助记词长度" className="section-card">
-                    <Radio.Group
-                        value={options.wordCount}
-                        onChange={e => setOptions(prev => ({ ...prev, wordCount: e.target.value }))}
-                        buttonStyle="solid"
-                    >
-                        <Space>
-                            {[12, 15, 18, 21, 24].map(length => (
-                                <Radio.Button key={length} value={length}>
-                                    {length}位
-                                </Radio.Button>
-                            ))}
-                        </Space>
-                    </Radio.Group>
-                </Card>
+                        <div style={{ marginTop: 20 }}>
+                            <Title level={5}>选择助记词长度</Title>
+                            <Select
+                                value={options.wordCount}
+                                onChange={value => setOptions(prev => ({ ...prev, wordCount: value }))}
+                                style={{ width: '100%' }}
+                                options={[
+                                    { label: '12位助记词', value: 12 },
+                                    { label: '15位助记词', value: 15 },
+                                    { label: '18位助记词', value: 18 },
+                                    { label: '21位助记词', value: 21 },
+                                    { label: '24位助记词', value: 24 },
+                                ]}
+                                defaultValue={12}
+                            />
+                        </div>
+
+                        <div className="tips-card">
+                            <Text type="secondary">
+                                Tips: 钱包生成过程均在本地电脑完成，我们无法获取到您的助记词及私钥！
+                            </Text>
+                        </div>
+                    </Card>
+                </Row>
 
                 <Card className="section-card">
                     <Row gutter={24}>
+                        <Col span={8}>
+                            <Title level={5}>生成助记词数量</Title>
+                            <InputNumber
+                                min={1}
+                                max={100}
+                                value={options.count}
+                                onChange={value => setOptions(prev => ({ ...prev, count: value || 1 }))}
+                                style={{ width: '100%' }}
+                            />
+                        </Col>
                         <Col span={8}>
                             <Title level={5}>每个助记词派生数量</Title>
                             <InputNumber
@@ -111,14 +142,15 @@ export const WalletGenerator: React.FC = () => {
                                 style={{ width: '100%' }}
                             />
                         </Col>
-                        <Col span={12}>
-                            <Title level={5}>生成的钱包地址数量</Title>
-                            <InputNumber
-                                min={1}
-                                max={100}
-                                value={options.count}
-                                onChange={value => setOptions(prev => ({ ...prev, count: value || 1 }))}
-                                style={{ width: '100%' }}
+                        <Col span={8}>
+                            <Title level={5}>导入助记词列表</Title>
+                            <Input.TextArea
+                                placeholder="每行一个助记词，例如：
+word1 word2 word3 ... word12
+word1 word2 word3 ... word12"
+                                rows={4}
+                                value={mnemonicList}
+                                onChange={e => setMnemonicList(e.target.value)}
                             />
                         </Col>
                     </Row>
@@ -133,6 +165,15 @@ export const WalletGenerator: React.FC = () => {
                         size="large"
                     >
                         {loading ? '生成中...' : '重新生成'}
+                    </Button>
+                    <Button
+                        type="primary"
+                        onClick={handleImportMnemonics}
+                        disabled={!mnemonicList.trim()}
+                        loading={loading}
+                        size="large"
+                    >
+                        从助记词生成
                     </Button>
                     <Button
                         icon={<DownloadOutlined />}
@@ -246,6 +287,6 @@ export const WalletGenerator: React.FC = () => {
                     </Card>
                 )}
             </Card>
-        </div>
+        </div >
     );
 }; 
