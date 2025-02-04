@@ -75,10 +75,14 @@ export const WalletGenerator: React.FC = () => {
     return (
         <div className="wallet-generator">
             <Card bordered={false}>
+                <div className="tips-card">
+                    <Text type="secondary">
+                        Tips: 钱包生成过程均在本地电脑完成，我们无法获取到您的助记词及私钥！请保管好您的助记词及私钥！
+                    </Text>
+                </div>
                 <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
                     批量生成ETH钱包地址
                 </Title>
-
                 <Row gutter={24}>
                     <Card title="选择批量生成钱包的链" className="section-card">
                         <Radio.Group
@@ -110,12 +114,6 @@ export const WalletGenerator: React.FC = () => {
                                 ]}
                                 defaultValue={12}
                             />
-                        </div>
-
-                        <div className="tips-card">
-                            <Text type="secondary">
-                                Tips: 钱包生成过程均在本地电脑完成，我们无法获取到您的助记词及私钥！
-                            </Text>
                         </div>
                     </Card>
                 </Row>
