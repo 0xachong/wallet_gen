@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
-import { GenerateOptions, WalletInfo, WalletMap } from '../types';
-import { ChainType } from '../types';
+import { GenerateOptions, WalletInfo, WalletMap, ChainType } from '../types/index';
 
 
 
@@ -82,32 +81,36 @@ async function generateWalletsCommon(mnemonic: string, derivationCount: number, 
 }
 
 async function generateWalletGroup(options: GenerateOptions): Promise<WalletInfo[]> {
-    const { wordCount = 12, language = 'en', chain, derivationCount = 1 } = options;
-    const wordlist = ethers.wordlists[language] || ethers.wordlists.en;
+    const { wordCount = 12, language = 'en', chains, derivationCount } = options;
+    const mnemonic = ethers.Wallet.createRandom().mnemonic?.phrase || '';
 
-    let entropyBytes: number;
-    if (wordCount <= 12) entropyBytes = 16;
-    else if (wordCount <= 18) entropyBytes = 24;
-    else entropyBytes = 32;
+    let wallets: WalletInfo[] = [];
 
-    const entropy = ethers.utils.randomBytes(entropyBytes);
-    const mnemonic = ethers.utils.entropyToMnemonic(entropy, wordlist);
+    // 为每个选中的链生成钱包
+    for (const chain of chains) {
+        const chainWallets = await generateWalletsCommon(mnemonic, derivationCount, chain);
+        wallets = wallets.concat(chainWallets);
+    }
 
-    return generateWalletsCommon(mnemonic, derivationCount, chain);
+    return wallets;
 }
 
 async function generateFromMnemonics(mnemonics: string[], options: GenerateOptions): Promise<WalletInfo[]> {
+    const { chains, derivationCount } = options;
     const wallets: WalletInfo[] = [];
+    let currentId = 1;
 
-    for (let i = 0; i < mnemonics.length; i++) {
-        const mnemonic = mnemonics[i].trim();
-        if (!mnemonic) continue;
-
-        const generatedWallets = await generateWalletsCommon(mnemonic, options.derivationCount, options.chain);
-        generatedWallets.forEach(wallet => {
-            wallet.id = wallets.length + 1;
-            wallets.push(wallet);
-        });
+    for (const mnemonic of mnemonics) {
+        // 为每个选中的链生成钱包
+        for (const chain of chains) {
+            const chainWallets = await generateWalletsCommon(mnemonic, derivationCount, chain);
+            chainWallets.forEach(wallet => {
+                wallet.id = currentId++;
+                wallets.push(wallet);
+            });
+        }
+        // 报告进度
+        self.postMessage({ type: 'progress', current: currentId, total: mnemonics.length * chains.length * derivationCount });
     }
 
     return wallets;

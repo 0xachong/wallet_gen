@@ -110,3 +110,32 @@
 .clickable-text:active {
     color: #e76f51;
 }
+
+.chain-checkbox {
+    padding: 4px 12px !important;
+    border: 1px solid #d9d9d9 !important;
+    border-radius: 4px !important;
+    transition: all 0.3s !important;
+    margin-right: 0 !important;
+}
+
+.chain-checkbox:hover {
+    border-color: #1890ff !important;
+    color: #1890ff !important;
+}
+
+.chain-checkbox .ant-checkbox {
+    display: none !important;
+}
+
+.chain-checkbox.ant-checkbox-wrapper-checked {
+    background-color: #1890ff !important;
+    border-color: #1890ff !important;
+    color: white !important;
+}
+
+.chain-checkbox.ant-checkbox-wrapper-checked:hover {
+    background-color: #40a9ff !important;
+    border-color: #40a9ff !important;
+    color: white !important;
+}

@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Radio, InputNumber, Progress, Space, Typography, Row, Col, message, Table, Input, Select } from 'antd';
+import { Card, Button, Checkbox, InputNumber, Progress, Space, Typography, Row, Col, message, Table, Input, Select } from 'antd';
 import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons';
-import { WalletInfo, ChainType, GenerateOptions } from '../types';
+import { WalletInfo, ChainType, GenerateOptions } from '../types/index';
 import { WalletGenerator as Generator } from '../utils/wallet';
 import './WalletGenerator.css';
 
 const { Title, Text } = Typography;
+
+// 定义表格数据类型
+interface GroupedWallet {
+    id: number;
+    mnemonic: string;
+    derivationIndex: number;
+    wallets: Record<string, {
+        privateKey: string;
+        address: string;
+    }>;
+}
 
 export const WalletGenerator: React.FC = () => {
     const [wallets, setWallets] = useState<WalletInfo[]>([]);
@@ -14,7 +25,7 @@ export const WalletGenerator: React.FC = () => {
     const [options, setOptions] = useState<GenerateOptions>({
         wordCount: 12,
         language: 'en',
-        chain: 'ETH',
+        chains: ['ETH'],
         count: 10,
         processCount: 5,
         derivationCount: 1
@@ -72,9 +83,16 @@ export const WalletGenerator: React.FC = () => {
         setLoading(false);
     };
 
-    const handleChainChange = (value: ChainType) => {
-        setOptions(prev => ({ ...prev, chain: value }));
-        if (value === 'TON') {
+    const handleChainChange = (values: ChainType[]) => {
+        if (values.length === 0) {
+            message.warning('请至少选择一个区块链');
+            values = ['ETH'];
+        }
+        setOptions((prev: GenerateOptions) => ({
+            ...prev,
+            chains: values
+        }));
+        if (values.includes('TON')) {
             message.warning('注意: TON 生成私钥及地址目前仅支持 OKX 钱包，与其他钱包可能不兼容');
         }
     };
@@ -99,18 +117,29 @@ export const WalletGenerator: React.FC = () => {
                     {/* 链选择 */}
                     <div style={{ marginBottom: '12px' }}>
                         <Title level={5} style={{ marginBottom: '8px' }}>选择链</Title>
-                        <Radio.Group
-                            value={options.chain}
-                            onChange={e => handleChainChange(e.target.value)}
-                            buttonStyle="solid"
-                            size="middle"
+                        <Checkbox.Group
+                            value={options.chains}
+                            onChange={(values: ChainType[]) => {
+                                if (values.length === 0) {
+                                    message.warning('请至少选择一个区块链');
+                                    values = ['ETH'];
+                                }
+                                handleChainChange(values);
+                            }}
+                            style={{ width: '100%' }}
                         >
-                            <Space wrap size={4}>
+                            <Space wrap size={8}>
                                 {chains.map(chain => (
-                                    <Radio.Button key={chain} value={chain}>{chain}</Radio.Button>
+                                    <Checkbox
+                                        key={chain}
+                                        value={chain}
+                                        className="chain-checkbox"
+                                    >
+                                        {chain}
+                                    </Checkbox>
                                 ))}
                             </Space>
-                        </Radio.Group>
+                        </Checkbox.Group>
                     </div>
 
                     {/* 其他参数 */}
@@ -120,7 +149,7 @@ export const WalletGenerator: React.FC = () => {
                             <Select
                                 size="middle"
                                 value={options.wordCount as 12 | 15 | 18 | 21 | 24}
-                                onChange={(value: 12 | 15 | 18 | 21 | 24) => setOptions(prev => ({ ...prev, wordCount: value }))}
+                                onChange={(value: 12 | 15 | 18 | 21 | 24) => setOptions((prev: GenerateOptions) => ({ ...prev, wordCount: value }))}
                                 style={{ width: '100%' }}
                                 options={[
                                     { label: '12位助记词', value: 12 },
@@ -139,7 +168,7 @@ export const WalletGenerator: React.FC = () => {
                                 min={1}
                                 max={100}
                                 value={options.count}
-                                onChange={value => setOptions(prev => ({ ...prev, count: value || 1 }))}
+                                onChange={value => setOptions((prev: GenerateOptions) => ({ ...prev, count: value || 1 }))}
                                 style={{ width: '100%' }}
                             />
                         </Col>
@@ -150,7 +179,7 @@ export const WalletGenerator: React.FC = () => {
                                 min={1}
                                 max={20}
                                 value={options.derivationCount}
-                                onChange={value => setOptions(prev => ({ ...prev, derivationCount: value || 1 }))}
+                                onChange={value => setOptions((prev: GenerateOptions) => ({ ...prev, derivationCount: value || 1 }))}
                                 style={{ width: '100%' }}
                             />
                         </Col>
@@ -201,32 +230,46 @@ word1 word2 word3 ... word12"
                     >
                         <div className="table-container">
                             <Table
-                                dataSource={wallets}
-                                rowKey={record => `${record.chain}-${record.id}-${record.derivationIndex}`}
+                                dataSource={(() => {
+                                    // 按助记词和派生索引分组
+                                    const groups = wallets.reduce((acc, wallet) => {
+                                        const key = `${wallet.mnemonic}-${wallet.derivationIndex}`;
+                                        if (!acc[key]) {
+                                            acc[key] = {
+                                                id: wallet.id,
+                                                mnemonic: wallet.mnemonic,
+                                                derivationIndex: wallet.derivationIndex,
+                                                wallets: {}
+                                            };
+                                        }
+                                        acc[key].wallets[wallet.chain] = {
+                                            privateKey: wallet.privateKey,
+                                            address: wallet.address
+                                        };
+                                        return acc;
+                                    }, {} as Record<string, GroupedWallet>);
+                                    return Object.values(groups) as GroupedWallet[];
+                                })()}
+                                rowKey={(record: GroupedWallet) =>
+                                    `${record.mnemonic}-${record.derivationIndex}`}
                                 columns={[
                                     {
                                         title: '序号',
                                         dataIndex: 'id',
                                         key: 'id',
-                                        width: 80,
-                                    },
-                                    {
-                                        title: '链',
-                                        dataIndex: 'chain',
-                                        key: 'chain',
-                                        width: 100,
+                                        width: 60,
                                     },
                                     {
                                         title: '派生索引',
                                         dataIndex: 'derivationIndex',
                                         key: 'derivationIndex',
-                                        width: 100,
+                                        width: 80,
                                     },
                                     {
                                         title: '助记词',
                                         dataIndex: 'mnemonic',
                                         key: 'mnemonic',
-                                        width: '25%',
+                                        width: 240,
                                         render: (text: string) => {
                                             const words = text.split(' ');
                                             const displayText = words.length > 6
@@ -246,47 +289,54 @@ word1 word2 word3 ... word12"
                                             );
                                         },
                                     },
-                                    {
-                                        title: '私钥',
-                                        dataIndex: 'privateKey',
-                                        key: 'privateKey',
-                                        width: '25%',
-                                        render: (text: string) => (
-                                            <Typography.Text
-                                                className="monospace-text clickable-text"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(text);
-                                                    message.success('私钥已复制到剪贴板');
-                                                }}
-                                            >
-                                                {text.slice(0, 10)}...{text.slice(-8)}
-                                            </Typography.Text>
-                                        ),
-                                    },
-                                    {
-                                        title: '钱包地址',
-                                        dataIndex: 'address',
-                                        key: 'address',
-                                        width: '25%',
-                                        render: (text: string) => {
-                                            if (typeof text !== 'string') return text;
-                                            return (
-                                                <Typography.Text
-                                                    className="monospace-text clickable-text"
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(text);
-                                                        message.success('地址已复制到剪贴板');
-                                                    }}
-                                                >
-                                                    {text.slice(0, 6)}...{text.slice(-4)}
-                                                </Typography.Text>
-                                            );
-                                        },
-                                    }
+                                    ...options.chains.map((chain: ChainType) => ({
+                                        title: chain,
+                                        key: chain,
+                                        children: [
+                                            {
+                                                title: '私钥',
+                                                dataIndex: ['wallets', chain, 'privateKey'],
+                                                key: `${chain}-privateKey`,
+                                                width: 180,
+                                                render: (text: string) => text && (
+                                                    <Typography.Text
+                                                        className="monospace-text clickable-text"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(text);
+                                                            message.success('私钥已复制到剪贴板');
+                                                        }}
+                                                    >
+                                                        {text.slice(0, 10)}...{text.slice(-8)}
+                                                    </Typography.Text>
+                                                ),
+                                            },
+                                            {
+                                                title: '地址',
+                                                dataIndex: ['wallets', chain, 'address'],
+                                                key: `${chain}-address`,
+                                                width: 180,
+                                                render: (text: string) => text && (
+                                                    <Typography.Text
+                                                        className="monospace-text clickable-text"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(text);
+                                                            message.success('地址已复制到剪贴板');
+                                                        }}
+                                                    >
+                                                        {text.slice(0, 10)}...{text.slice(-8)}
+                                                    </Typography.Text>
+                                                ),
+                                            },
+                                        ],
+                                    })),
                                 ]}
-                                pagination={false}
-                                scroll={{ x: true }}
                                 size="small"
+                                scroll={{ x: 'max-content' }}
+                                pagination={{
+                                    defaultPageSize: 10,
+                                    showSizeChanger: true,
+                                    showQuickJumper: true,
+                                }}
                             />
                         </div>
                     </Card>
