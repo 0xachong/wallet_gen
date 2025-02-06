@@ -186,7 +186,7 @@ export const WalletGenerator: React.FC = () => {
                         <Col span={6}>
                             <Title level={5} style={{ marginBottom: '8px' }}>导入助记词</Title>
                             <Input.TextArea
-                                placeholder="每行一个助记词，例如：
+                                placeholder="每行一组助记词，例如：
 word1 word2 word3 ... word12
 word1 word2 word3 ... word12"
                                 rows={4}
@@ -203,7 +203,6 @@ word1 word2 word3 ... word12"
                                 {loading ? '生成中...' : '重新生成'}
                             </Button>
                             <Button type="primary" size="middle" onClick={handleImportMnemonics} disabled={!mnemonicList.trim()} loading={loading}>从助记词生成</Button>
-                            <Button size="middle" icon={<DownloadOutlined />} onClick={handleDownload} disabled={wallets.length === 0}>下载表格</Button>
                         </Space>
 
                         {/* 进度条 */}
@@ -227,6 +226,16 @@ word1 word2 word3 ... word12"
                         className="section-card"
                         bodyStyle={{ padding: '8px' }}
                         headStyle={{ padding: '8px 12px' }}
+                        extra={
+                            <Button
+                                type="primary"
+                                icon={<DownloadOutlined />}
+                                onClick={handleDownload}
+                                size="small"
+                            >
+                                下载表格
+                            </Button>
+                        }
                     >
                         <div className="table-container">
                             <Table
