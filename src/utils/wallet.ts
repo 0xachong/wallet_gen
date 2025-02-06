@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import { WalletInfo, GenerateOptions } from '../types/index';
 
 interface GroupedWallet {

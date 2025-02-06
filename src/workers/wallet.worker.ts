@@ -81,7 +81,7 @@ async function generateWalletsCommon(mnemonic: string, derivationCount: number, 
 }
 
 async function generateWalletGroup(options: GenerateOptions): Promise<WalletInfo[]> {
-    const { wordCount = 12, language = 'en', chains, derivationCount } = options;
+    const { chains, derivationCount } = options;
     const mnemonic = ethers.Wallet.createRandom().mnemonic?.phrase || '';
 
     let wallets: WalletInfo[] = [];
