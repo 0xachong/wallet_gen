@@ -166,7 +166,7 @@ export const WalletGenerator: React.FC = () => {
                             <InputNumber
                                 size="middle"
                                 min={1}
-                                max={100}
+                                max={1000}
                                 value={options.count}
                                 onChange={value => setOptions((prev: GenerateOptions) => ({ ...prev, count: value || 1 }))}
                                 style={{ width: '100%' }}
@@ -177,7 +177,7 @@ export const WalletGenerator: React.FC = () => {
                             <InputNumber
                                 size="middle"
                                 min={1}
-                                max={20}
+                                max={10000}
                                 value={options.derivationCount}
                                 onChange={value => setOptions((prev: GenerateOptions) => ({ ...prev, derivationCount: value || 1 }))}
                                 style={{ width: '100%' }}
